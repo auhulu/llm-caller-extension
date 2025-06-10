@@ -1,62 +1,143 @@
 import '@src/Popup.css';
-import { t } from '@extension/i18n';
-import { PROJECT_URL_OBJECT, useStorage, withErrorBoundary, withSuspense } from '@extension/shared';
-import { exampleThemeStorage } from '@extension/storage';
-import { cn, ErrorDisplay, LoadingSpinner, ToggleButton } from '@extension/ui';
+import { useStorage, withErrorBoundary, withSuspense } from '@extension/shared';
+import { llmSettingsStorage } from '@extension/storage';
+import { ErrorDisplay, LoadingSpinner } from '@extension/ui';
+import { Container, Title, Select, TextInput, Textarea, Button, Group, Text } from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { notifications } from '@mantine/notifications';
+import { useState } from 'react';
 
-const notificationOptions = {
-  type: 'basic',
-  iconUrl: chrome.runtime.getURL('icon-34.png'),
-  title: 'Injecting content script error',
-  message: 'You cannot inject script here!',
-} as const;
+const llmProviders = [
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'google', label: 'Google Gemini' },
+  { value: 'anthropic', label: 'Anthropic Claude' },
+];
+
+const modelsByProvider = {
+  openai: [
+    { value: 'gpt-4o', label: 'GPT-4o' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+    { value: 'custom', label: 'Custom' },
+  ],
+  google: [
+    { value: 'gemini-1.5-pro-latest', label: 'Gemini 1.5 Pro Latest' },
+    { value: 'gemini-1.5-flash-latest', label: 'Gemini 1.5 Flash Latest' },
+    { value: 'gemini-pro', label: 'Gemini Pro' },
+    { value: 'custom', label: 'Custom' },
+  ],
+  anthropic: [
+    { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+    { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+    { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+    { value: 'custom', label: 'Custom' },
+  ],
+};
 
 const Popup = () => {
-  const { isLight } = useStorage(exampleThemeStorage);
-  const logo = isLight ? 'popup/logo_vertical.svg' : 'popup/logo_vertical_dark.svg';
+  const llmSettings = useStorage(llmSettingsStorage);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const goGithubSite = () => chrome.tabs.create(PROJECT_URL_OBJECT);
+  const form = useForm({
+    initialValues: {
+      provider: llmSettings.provider,
+      apiKey: llmSettings.apiKey,
+      model: llmSettings.model,
+      customModel: llmSettings.customModel,
+      promptTemplate: llmSettings.promptTemplate,
+    },
+    validate: {
+      apiKey: value => (value.trim().length === 0 ? 'API Key is required' : null),
+      promptTemplate: value => {
+        if (value.trim().length === 0) return 'Prompt template is required';
+        if (!value.includes('{{selected_text}}')) return 'Prompt template must include {{selected_text}} variable';
+        return null;
+      },
+    },
+  });
 
-  const injectContentScript = async () => {
-    const [tab] = await chrome.tabs.query({ currentWindow: true, active: true });
-
-    if (tab.url!.startsWith('about:') || tab.url!.startsWith('chrome:')) {
-      chrome.notifications.create('inject-error', notificationOptions);
-    }
-
-    await chrome.scripting
-      .executeScript({
-        target: { tabId: tab.id! },
-        files: ['/content-runtime/example.iife.js', '/content-runtime/all.iife.js'],
-      })
-      .catch(err => {
-        // Handling errors related to other paths
-        if (err.message.includes('Cannot access a chrome:// URL')) {
-          chrome.notifications.create('inject-error', notificationOptions);
-        }
+  const handleSave = async (values: typeof form.values) => {
+    setIsLoading(true);
+    try {
+      await llmSettingsStorage.set(values);
+      notifications.show({
+        title: 'Success',
+        message: 'Settings saved successfully!',
+        color: 'green',
       });
+    } catch {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save settings',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  const currentModels = modelsByProvider[form.values.provider as keyof typeof modelsByProvider] || [];
+
   return (
-    <div className={cn('App', isLight ? 'bg-slate-50' : 'bg-gray-800')}>
-      <header className={cn('App-header', isLight ? 'text-gray-900' : 'text-gray-100')}>
-        <button onClick={goGithubSite}>
-          <img src={chrome.runtime.getURL(logo)} className="App-logo" alt="logo" />
-        </button>
-        <p>
-          Edit <code>pages/popup/src/Popup.tsx</code>
-        </p>
-        <button
-          className={cn(
-            'mt-4 rounded px-4 py-1 font-bold shadow hover:scale-105',
-            isLight ? 'bg-blue-200 text-black' : 'bg-gray-700 text-white',
-          )}
-          onClick={injectContentScript}>
-          {t('injectButton')}
-        </button>
-        <ToggleButton>{t('toggleTheme')}</ToggleButton>
-      </header>
-    </div>
+    <Container size="sm" p="md" style={{ width: '400px', minHeight: '500px' }}>
+      <Title order={2} mb="lg">
+        LLM Extension Settings
+      </Title>
+
+      <form onSubmit={form.onSubmit(handleSave)}>
+        <Select
+          label="LLM Provider"
+          placeholder="Select provider"
+          data={llmProviders}
+          {...form.getInputProps('provider')}
+          mb="md"
+        />
+
+        <TextInput
+          label="API Key"
+          placeholder="Enter your API key"
+          type="password"
+          {...form.getInputProps('apiKey')}
+          mb="md"
+        />
+
+        <Select
+          label="Model"
+          placeholder="Select model"
+          data={currentModels}
+          {...form.getInputProps('model')}
+          mb="md"
+        />
+
+        {form.values.model === 'custom' && (
+          <TextInput
+            label="Custom Model Name"
+            placeholder="Enter custom model name"
+            {...form.getInputProps('customModel')}
+            mb="md"
+          />
+        )}
+
+        <Textarea
+          label="Prompt Template"
+          placeholder="Enter your prompt template. Use {{selected_text}} where you want the selected text to appear."
+          rows={4}
+          {...form.getInputProps('promptTemplate')}
+          mb="md"
+        />
+
+        <Text size="sm" c="dimmed" mb="lg">
+          The prompt template must include the variable <code>{'{{selected_text}}'}</code> which will be replaced with
+          the text you select on web pages.
+        </Text>
+
+        <Group justify="flex-end">
+          <Button type="submit" loading={isLoading}>
+            Save Settings
+          </Button>
+        </Group>
+      </form>
+    </Container>
   );
 };
 

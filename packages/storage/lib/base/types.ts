@@ -52,3 +52,15 @@ export interface ThemeStateType {
 export type ThemeStorageType = BaseStorageType<ThemeStateType> & {
   toggle: () => Promise<void>;
 };
+
+export type LLMProvider = 'openai' | 'google' | 'anthropic';
+
+export interface LLMSettingsStateType {
+  provider: LLMProvider;
+  apiKey: string;
+  model: string;
+  customModel: string;
+  promptTemplate: string;
+}
+
+export type LLMSettingsStorageType = BaseStorageType<LLMSettingsStateType>;
