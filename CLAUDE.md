@@ -56,8 +56,8 @@ This is a monorepo Chrome extension boilerplate using pnpm workspaces and Turbor
 **Extension Pages:**
 Each page in `/pages/` represents a different Chrome extension entry point with a specific role in this project:
 
-- **`popup/` - Settings Panel (React + Vite)**
-    - Serves as the main configuration UI for the user.
+- **`popup/` - Settings Panel (React + Vite + Mantine)**
+    - Serves as the main configuration UI for the user using Mantine UI components.
     - **LLM Provider Selection:** A dropdown to select between OpenAI, Gemini, and Anthropic.
     - **API Key Input:** An input field for the user's API key. The key is securely stored in `chrome.storage.local` using the `@extension/storage` package.
     - **Model Selection:** A dropdown list of major models for the selected provider (e.g., `gpt-4o`, `gemini-1.5-pro-latest`). It also includes a "Custom" option that allows the user to input a model name manually.
@@ -65,8 +65,8 @@ Each page in `/pages/` represents a different Chrome extension entry point with 
 
 - `options/` - Extension settings page (Not used for core functionality in this project).
 
-- **`side-panel/` - Chat Interface (React + Vite)**
-    - The main interface for displaying LLM responses and continuing the conversation.
+- **`side-panel/` - Chat Interface (React + Vite + Mantine)**
+    - The main interface for displaying LLM responses and continuing the conversation using Mantine UI components.
     - **Automatic Opening:** This panel is opened automatically via the background script when the context menu is used.
     - **Chat UI:** The chat interface is built using **Vercel's AI SDK** (`useChat` hook) to handle streaming responses and message history.
     - **Session-based History:** Chat history is maintained only while the side panel is open. It is cleared when the panel is closed.
@@ -87,7 +87,7 @@ Key shared packages in `/packages/`:
 - `@extension/shared` - Common utilities, hooks, components, types
 - `@extension/storage` - Helper for `chrome.storage.local` to manage API keys and user settings.
 - `@extension/i18n` - Type-safe internationalization
-- `@extension/ui` - Shared UI components with Tailwind integration
+- `@extension/ui` - Shared UI components with Mantine integration
 - `@extension/vite-config` - Shared Vite build configuration
 - `@extension/hmr` - Custom hot module replacement for extension development
 
