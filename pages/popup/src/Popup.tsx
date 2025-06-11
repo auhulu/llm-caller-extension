@@ -2,10 +2,8 @@ import '@src/Popup.css';
 import { useStorage, withErrorBoundary, withSuspense } from '@extension/shared';
 import { llmSettingsStorage } from '@extension/storage';
 import { ErrorDisplay, LoadingSpinner } from '@extension/ui';
-import { Container, Title, Select, TextInput, Textarea, Button, Group, Text } from '@mantine/core';
+import { Container, Select, TextInput, Textarea, Button, Group, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
-import { useState } from 'react';
 
 const providers = ['openai', 'google', 'anthropic'] as const;
 const llmProviders = providers.map(provider => ({ value: provider, label: provider }));
@@ -29,7 +27,7 @@ const modelsByProvider = models.reduce(
       ...acc,
       [provider]: [
         ...modelList.map((model: string) => ({ value: model, label: model })),
-        { value: 'custom', label: 'Custom' },
+        { value: 'custom', label: 'custom' },
       ],
     };
   },
@@ -38,7 +36,6 @@ const modelsByProvider = models.reduce(
 
 const Popup = () => {
   const llmSettings = useStorage(llmSettingsStorage);
-  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
     initialValues: {
@@ -58,34 +55,12 @@ const Popup = () => {
     },
   });
 
-  const handleSave = async (values: typeof form.values) => {
-    setIsLoading(true);
-    try {
-      await llmSettingsStorage.set(values);
-      notifications.show({
-        title: 'Success',
-        message: 'Settings saved successfully!',
-        color: 'green',
-      });
-    } catch {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to save settings',
-        color: 'red',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleSave = (values: typeof form.values) => llmSettingsStorage.set(values);
 
   const currentModels = modelsByProvider[form.values.provider as keyof typeof modelsByProvider] || [];
 
   return (
     <Container size="sm" p="md" style={{ width: '400px', minHeight: '500px' }}>
-      <Title order={2} mb="lg">
-        LLM Extension Settings
-      </Title>
-
       <form onSubmit={form.onSubmit(handleSave)}>
         <Select
           label="LLM Provider"
@@ -134,9 +109,7 @@ const Popup = () => {
         </Text>
 
         <Group justify="flex-end">
-          <Button type="submit" loading={isLoading}>
-            Save Settings
-          </Button>
+          <Button type="submit">Save Settings</Button>
         </Group>
       </form>
     </Container>

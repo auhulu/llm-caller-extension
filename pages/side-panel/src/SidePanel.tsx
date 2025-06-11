@@ -2,19 +2,7 @@ import '@src/SidePanel.css';
 import { useLLMChat } from './hooks/use-llm-chat';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { ErrorDisplay, LoadingSpinner } from '@extension/ui';
-import {
-  Container,
-  Title,
-  ScrollArea,
-  TextInput,
-  Button,
-  Group,
-  Paper,
-  Text,
-  ActionIcon,
-  Stack,
-  Alert,
-} from '@mantine/core';
+import { Container, ScrollArea, TextInput, Button, Group, Paper, Text, ActionIcon, Stack, Alert } from '@mantine/core';
 import { IconSend, IconCopy, IconTrash, IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import type { LLMSettingsStateType } from '@extension/storage';
@@ -85,7 +73,6 @@ const SidePanel = () => {
   return (
     <Container p="md" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Group justify="space-between" mb="md">
-        <Title order={3}>LLM Chat</Title>
         <ActionIcon onClick={clearChat} variant="subtle" color="red">
           <IconTrash size={16} />
         </ActionIcon>
