@@ -5,7 +5,7 @@ import { llmSettingsStorage } from '@extension/storage';
 const createContextMenu = () => {
   chrome.contextMenus.create({
     id: 'llm-chat',
-    title: 'Chat with LLM',
+    title: 'Call LLM',
     contexts: ['selection'],
   });
 };

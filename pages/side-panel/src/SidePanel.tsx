@@ -2,14 +2,14 @@ import '@src/SidePanel.css';
 import { useLLMResponse } from './hooks/use-llm-response';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { ErrorDisplay, LoadingSpinner } from '@extension/ui';
-import { Alert, Center, Container, Loader, ScrollArea, Text } from '@mantine/core';
+import { Alert, Container, ScrollArea, Text } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import type { LLMSettingsStateType } from '@extension/storage';
 
 const SidePanel = () => {
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [chatSettings, setChatSettings] = useState<LLMSettingsStateType | null>(null);
-  const { response, error, sendPrompt, isLoading } = useLLMResponse();
+  const { response, error, sendPrompt } = useLLMResponse();
 
   useEffect(() => {
     const handleMessage = (
@@ -28,7 +28,6 @@ const SidePanel = () => {
     return () => chrome.runtime.onMessage.removeListener(handleMessage);
   }, []);
 
-  // Send initial prompt when received
   useEffect(() => {
     if (initialPrompt && chatSettings) {
       sendPrompt(initialPrompt, chatSettings);
@@ -36,12 +35,6 @@ const SidePanel = () => {
     }
   }, [initialPrompt, chatSettings, sendPrompt]);
   if (!chatSettings || error) return <Alert color="red">error</Alert>;
-  if (isLoading)
-    return (
-      <Center>
-        <Loader color="gray" type="bars" />
-      </Center>
-    );
   return (
     <Container p="md" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <ScrollArea flex={1}>
