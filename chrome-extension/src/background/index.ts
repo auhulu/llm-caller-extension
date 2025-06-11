@@ -18,7 +18,10 @@ chrome.runtime.onInstalled.addListener(createContextMenu);
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === 'llm-chat' && info.selectionText && tab?.id) {
     try {
-      // Get user settings
+      // Open side panel first to preserve user gesture
+      await chrome.sidePanel.open({ tabId: tab.id });
+
+      // Get user settings after opening panel
       const settings = await llmSettingsStorage.get();
 
       // Validate settings
@@ -34,9 +37,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
       // Format the prompt with selected text
       const formattedPrompt = settings.promptTemplate.replace('{{selected_text}}', info.selectionText);
-
-      // Open side panel
-      await chrome.sidePanel.open({ tabId: tab.id });
 
       // Send initial prompt to side panel
       chrome.runtime.sendMessage({
