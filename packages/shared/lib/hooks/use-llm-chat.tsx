@@ -57,8 +57,17 @@ export const useLLMChat = () => {
             })),
           };
         } else if (settings.provider === 'google') {
-          // For now, show an error for Google as it requires different API structure
-          throw new Error('Google Gemini support coming soon');
+          apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
+          requestBody = {
+            contents: [...messages, userMessage].map(msg => ({
+              role: msg.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: msg.content }],
+            })),
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 4096,
+            },
+          };
         }
 
         const headers: Record<string, string> = {
@@ -70,6 +79,9 @@ export const useLLMChat = () => {
         } else if (settings.provider === 'anthropic') {
           headers['Authorization'] = `Bearer ${settings.apiKey}`;
           headers['anthropic-version'] = '2023-06-01';
+        } else if (settings.provider === 'google') {
+          // Google uses API key as query parameter, update URL
+          apiUrl += `?key=${settings.apiKey}`;
         }
 
         const response = await fetch(apiUrl, {
@@ -90,6 +102,8 @@ export const useLLMChat = () => {
           assistantContent = data.choices?.[0]?.message?.content || 'No response received';
         } else if (settings.provider === 'anthropic') {
           assistantContent = data.content?.[0]?.text || 'No response received';
+        } else if (settings.provider === 'google') {
+          assistantContent = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received';
         }
 
         const assistantMessage: ChatMessage = {

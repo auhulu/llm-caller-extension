@@ -38,14 +38,29 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       // Format the prompt with selected text
       const formattedPrompt = settings.promptTemplate.replace('{{selected_text}}', info.selectionText);
 
-      // Send initial prompt to side panel
-      chrome.runtime.sendMessage({
-        type: 'INIT_CHAT',
-        payload: {
-          prompt: formattedPrompt,
-          settings: settings,
-        },
-      });
+      // Send initial prompt to side panel with retry logic
+      const sendInitMessage = () => {
+        console.log('Sending INIT_CHAT message to side panel');
+        chrome.runtime
+          .sendMessage({
+            type: 'INIT_CHAT',
+            payload: {
+              prompt: formattedPrompt,
+              settings: settings,
+            },
+          })
+          .then(response => {
+            console.log('Side panel responded:', response);
+          })
+          .catch(error => {
+            console.log('Failed to send message, retrying...', error);
+            // Retry after a short delay if side panel isn't ready
+            setTimeout(sendInitMessage, 100);
+          });
+      };
+
+      // Small delay to ensure side panel is loaded
+      setTimeout(sendInitMessage, 200);
     } catch (error) {
       console.error('Error handling context menu click:', error);
       chrome.notifications.create({

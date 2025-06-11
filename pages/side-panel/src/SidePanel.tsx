@@ -27,10 +27,16 @@ const SidePanel = () => {
 
   // Handle messages from background script
   useEffect(() => {
-    const handleMessage = (message: { type: string; payload: { prompt: string; settings: LLMSettingsStateType } }) => {
+    const handleMessage = (
+      message: { type: string; payload: { prompt: string; settings: LLMSettingsStateType } },
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response?: { success: boolean }) => void,
+    ) => {
+      console.log('Side panel received message:', message);
       if (message.type === 'INIT_CHAT') {
         setInitialPrompt(message.payload.prompt);
         setChatSettings(message.payload.settings);
+        sendResponse({ success: true }); // Acknowledge receipt
       }
     };
 
