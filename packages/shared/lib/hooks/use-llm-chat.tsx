@@ -1,5 +1,10 @@
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
+import { streamText } from 'ai';
 import { useState, useCallback } from 'react';
 import type { LLMSettingsStateType } from '@extension/storage';
+import type { CoreMessage } from 'ai';
 
 export interface ChatMessage {
   id: string;
@@ -30,90 +35,59 @@ export const useLLMChat = () => {
       setMessages(prev => [...prev, userMessage]);
 
       try {
-        // Use OpenAI API directly for now
         const model = settings.model === 'custom' ? settings.customModel : settings.model;
 
-        let apiUrl = '';
-        let requestBody: Record<string, unknown> = {};
+        // Convert messages to CoreMessage format
+        const coreMessages: CoreMessage[] = [...messages, userMessage].map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        }));
+
+        let result;
 
         if (settings.provider === 'openai') {
-          apiUrl = 'https://api.openai.com/v1/chat/completions';
-          requestBody = {
-            model: model,
-            messages: [...messages, userMessage].map(msg => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-            stream: false,
-          };
+          const openai = createOpenAI({
+            apiKey: settings.apiKey,
+          });
+          result = streamText({
+            model: openai(model),
+            messages: coreMessages,
+          });
         } else if (settings.provider === 'anthropic') {
-          apiUrl = 'https://api.anthropic.com/v1/messages';
-          requestBody = {
-            model: model,
-            max_tokens: 4096,
-            messages: [...messages, userMessage].map(msg => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-          };
+          const anthropic = createAnthropic({
+            apiKey: settings.apiKey,
+          });
+          result = streamText({
+            model: anthropic(model),
+            messages: coreMessages,
+          });
         } else if (settings.provider === 'google') {
-          apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
-          requestBody = {
-            contents: [...messages, userMessage].map(msg => ({
-              role: msg.role === 'assistant' ? 'model' : 'user',
-              parts: [{ text: msg.content }],
-            })),
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 4096,
-            },
-          };
-        }
-
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-
-        if (settings.provider === 'openai') {
-          headers['Authorization'] = `Bearer ${settings.apiKey}`;
-        } else if (settings.provider === 'anthropic') {
-          headers['Authorization'] = `Bearer ${settings.apiKey}`;
-          headers['anthropic-version'] = '2023-06-01';
-        } else if (settings.provider === 'google') {
-          // Google uses API key as query parameter, update URL
-          apiUrl += `?key=${settings.apiKey}`;
-        }
-
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        let assistantContent = '';
-        if (settings.provider === 'openai') {
-          assistantContent = data.choices?.[0]?.message?.content || 'No response received';
-        } else if (settings.provider === 'anthropic') {
-          assistantContent = data.content?.[0]?.text || 'No response received';
-        } else if (settings.provider === 'google') {
-          assistantContent = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received';
+          const google = createGoogleGenerativeAI({
+            apiKey: settings.apiKey,
+          });
+          result = streamText({
+            model: google(model),
+            messages: coreMessages,
+          });
+        } else {
+          throw new Error(`Unsupported provider: ${settings.provider}`);
         }
 
         const assistantMessage: ChatMessage = {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: assistantContent,
+          content: '',
           timestamp: Date.now(),
         };
 
         setMessages(prev => [...prev, assistantMessage]);
+
+        // Stream the response
+        for await (const delta of result.textStream) {
+          setMessages(prev =>
+            prev.map(msg => (msg.id === assistantMessage.id ? { ...msg, content: msg.content + delta } : msg)),
+          );
+        }
       } catch (error) {
         console.error('Chat error:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

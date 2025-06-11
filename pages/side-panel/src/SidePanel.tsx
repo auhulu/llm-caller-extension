@@ -29,7 +29,7 @@ const SidePanel = () => {
   useEffect(() => {
     const handleMessage = (
       message: { type: string; payload: { prompt: string; settings: LLMSettingsStateType } },
-      sender: chrome.runtime.MessageSender,
+      _sender: chrome.runtime.MessageSender,
       sendResponse: (response?: { success: boolean }) => void,
     ) => {
       console.log('Side panel received message:', message);

@@ -14,7 +14,8 @@ This extension enables users to interact with Large Language Models (LLMs) direc
 ## Common Development Commands
 
 ### Build and Development
-- `pnpm dev` - Start development mode for Chrome (with HMR)
+- `pnpm dev` - 
+tart development mode for Chrome (with HMR)
 - `pnpm dev:firefox` - Start development mode for Firefox
 - `pnpm build` - Production build for Chrome
 - `pnpm build:firefox` - Production build for Firefox
