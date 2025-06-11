@@ -2,24 +2,21 @@ import '@src/SidePanel.css';
 import { useLLMResponse } from './hooks/use-llm-response';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { ErrorDisplay, LoadingSpinner } from '@extension/ui';
-import { Container, ScrollArea, Text } from '@mantine/core';
+import { Alert, Center, Container, Loader, ScrollArea, Text } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import type { LLMSettingsStateType } from '@extension/storage';
 
 const SidePanel = () => {
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [chatSettings, setChatSettings] = useState<LLMSettingsStateType | null>(null);
+  const { response, error, sendPrompt, isLoading } = useLLMResponse();
 
-  const { response, sendPrompt } = useLLMResponse();
-
-  // Handle messages from background script
   useEffect(() => {
     const handleMessage = (
       message: { type: string; payload: { prompt: string; settings: LLMSettingsStateType } },
       _sender: chrome.runtime.MessageSender,
       sendResponse: (response?: { success: boolean }) => void,
     ) => {
-      console.log('Side panel received message:', message);
       if (message.type === 'INIT_CHAT') {
         setInitialPrompt(message.payload.prompt);
         setChatSettings(message.payload.settings);
@@ -38,7 +35,13 @@ const SidePanel = () => {
       setInitialPrompt(''); // Clear after sending
     }
   }, [initialPrompt, chatSettings, sendPrompt]);
-  if (!chatSettings) return null;
+  if (!chatSettings || error) return <Alert color="red">error</Alert>;
+  if (isLoading)
+    return (
+      <Center>
+        <Loader color="gray" type="bars" />
+      </Center>
+    );
   return (
     <Container p="md" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <ScrollArea flex={1}>
