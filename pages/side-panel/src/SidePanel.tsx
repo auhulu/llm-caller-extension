@@ -1,5 +1,6 @@
 import '@src/SidePanel.css';
-import { withErrorBoundary, withSuspense, useLLMChat } from '@extension/shared';
+import { useLLMChat } from './hooks/use-llm-chat';
+import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { ErrorDisplay, LoadingSpinner } from '@extension/ui';
 import {
   Container,

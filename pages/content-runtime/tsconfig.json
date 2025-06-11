@@ -5,8 +5,8 @@
     "paths": {
       "@src/*": ["src/*"]
     },
-    "types": ["chrome", "node", "./tailwind.d.ts"],
+    "types": ["chrome", "node", "@extension/vite-config/css"],
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "build.mts", "tailwind.config.ts"]
+  "include": ["src", "build.mts"]
 }

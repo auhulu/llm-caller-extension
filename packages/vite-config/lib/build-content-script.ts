@@ -1,7 +1,6 @@
 import { withPageConfig } from './index.js';
 import { IS_DEV } from '@extension/env';
 import { makeEntryPointPlugin } from '@extension/hmr';
-import { build as buildTW } from 'tailwindcss/lib/cli/build';
 import { build } from 'vite';
 import { readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -11,10 +10,9 @@ interface IContentBuilderProps {
   srcDir: string;
   rootDir: string;
   contentName: 'content' | 'content-ui' | 'content-runtime';
-  withTw: boolean;
 }
 
-type BuilderPropsType = Omit<IContentBuilderProps, 'withTw'>;
+type BuilderPropsType = IContentBuilderProps;
 
 const getContentScriptEntries = (matchesDir: string) => {
   const entryPoints: Record<string, string> = {};
@@ -60,37 +58,18 @@ const configsBuilder = ({ matchesDir, srcDir, rootDir, contentName }: BuilderPro
     }),
   }));
 
-const builds = async ({ srcDir, contentName, rootDir, matchesDir, withTw }: IContentBuilderProps) =>
-  configsBuilder({ matchesDir, srcDir, rootDir, contentName }).map(async ({ name, config }) => {
-    if (withTw) {
-      const folder = resolve(matchesDir, name);
-      const args = {
-        ['--input']: resolve(folder, 'index.css'),
-        ['--output']: resolve(rootDir, 'dist', name, 'index.css'),
-        ['--config']: resolve(rootDir, 'tailwind.config.ts'),
-        ['--watch']: IS_DEV,
-      };
-
-      await buildTW(args);
-    }
-
+const builds = async ({ srcDir, contentName, rootDir, matchesDir }: IContentBuilderProps) =>
+  configsBuilder({ matchesDir, srcDir, rootDir, contentName }).map(async ({ config }) => {
     //@ts-expect-error This is hidden property from vite's resolveConfig()
     config.configFile = false;
     return build(config);
   });
 
 // FIXME: USE THIS FOR ALL CONTENT SCRIPTs
-export const contentBuilder = async ({
-  matchesDir,
-  srcDir,
-  rootDir,
-  contentName,
-  withTw = true,
-}: IContentBuilderProps) =>
+export const contentBuilder = async ({ matchesDir, srcDir, rootDir, contentName }: IContentBuilderProps) =>
   builds({
     srcDir,
     contentName,
     rootDir,
     matchesDir,
-    withTw,
   });
