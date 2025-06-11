@@ -7,32 +7,34 @@ import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { useState } from 'react';
 
-const llmProviders = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'google', label: 'Google Gemini' },
-  { value: 'anthropic', label: 'Anthropic Claude' },
-];
+const providers = ['openai', 'google', 'anthropic'] as const;
+const llmProviders = providers.map(provider => ({ value: provider, label: provider }));
 
-const modelsByProvider = {
-  openai: [
-    { value: 'gpt-4o', label: 'GPT-4o' },
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-    { value: 'custom', label: 'Custom' },
-  ],
-  google: [
-    { value: 'gemini-1.5-pro-latest', label: 'Gemini 1.5 Pro Latest' },
-    { value: 'gemini-1.5-flash-latest', label: 'Gemini 1.5 Flash Latest' },
-    { value: 'gemini-pro', label: 'Gemini Pro' },
-    { value: 'custom', label: 'Custom' },
-  ],
-  anthropic: [
-    { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
-    { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
-    { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-    { value: 'custom', label: 'Custom' },
-  ],
-};
+const models = [
+  { openai: ['o3', 'gpt-4o', 'gpt-4o-mini'] },
+  {
+    google: [
+      'gemini-2.5-pro-preview-06-05',
+      'gemini-2.5-flash-preview-05-20',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
+    ],
+  },
+  { anthropic: ['claude-opus-4-20250514', 'claude-sonnet-4-20250514'] },
+] as const;
+const modelsByProvider = models.reduce(
+  (acc, providerObj) => {
+    const [[provider, modelList]] = Object.entries(providerObj);
+    return {
+      ...acc,
+      [provider]: [
+        ...modelList.map((model: string) => ({ value: model, label: model })),
+        { value: 'custom', label: 'Custom' },
+      ],
+    };
+  },
+  {} as Record<string, { value: string; label: string }[]>,
+);
 
 const Popup = () => {
   const llmSettings = useStorage(llmSettingsStorage);
